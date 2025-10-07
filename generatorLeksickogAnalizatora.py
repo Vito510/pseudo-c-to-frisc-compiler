@@ -8,6 +8,18 @@ def ispis_reg_def() -> None:
     for k in reg_definicije:
         print(f'{k:40}\t{"".join(reg_definicije[k])}')
 
+def convert_2_pattern(pattern: str) -> str:
+    """converts the given regex pattern to python applicable format""" 
+    for key in reg_definicije:
+        key2 = "{" + key + "}"
+        if key2+"|" in pattern: # ne moramo enkapsulirati
+            pattern = pattern.replace(key2,f'{reg_definicije[key]}')
+        elif key2 in pattern:   # moramo
+            pattern = pattern.replace(key2,f'({reg_definicije[key]})')
+    pattern = pattern.replace("(","[").replace(")","]") # python regex uses [] insted of ()
+    if not (pattern.startswith('[') and pattern.endswith(']') or pattern.endswith('*')) : pattern = f'[{pattern}]'      # mora biti enkapsulirano sa [], ako vec nije
+    return pattern
+
 cut = 0
 for i, line in enumerate(pravila_txt):
 
@@ -33,16 +45,5 @@ jedinke = pravila_txt.pop(0).strip().split(" ")[1:]
 
 x = "e+100"
 
-for definicija in reg_definicije:
-    pattern = f'{reg_definicije[definicija]}'
-    for key in reg_definicije:
-        key2 = "{" + key + "}"
-        if key2+"|" in pattern: # ne moramo enkapsulirati
-            pattern = pattern.replace(key2,f'{reg_definicije[key]}')
-        elif key2 in pattern:   # moramo
-            pattern = pattern.replace(key2,f'({reg_definicije[key]})')
-    pattern = pattern.replace("(","[").replace(")","]") # python regex uses [] insted of ()
-    if not (pattern.startswith('[') and pattern.endswith(']') or pattern.endswith('*')) : pattern = f'[{pattern}]'      # mora biti enkapsulirano sa [], ako vec nije
-    print(f'{definicija:50}\t{re.fullmatch(pattern,x) is not None}')
-
+print(re.fullmatch(convert_2_pattern(reg_definicije["eksponent"]),x))
 
