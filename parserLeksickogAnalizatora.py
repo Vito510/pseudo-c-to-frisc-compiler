@@ -27,13 +27,11 @@ def parse(filepath: str) -> ParserData:
 
     pravila_txt = open(filepath, "r", encoding="utf-8").readlines()
 
-    cut = 0
     for i, line in enumerate(pravila_txt):
 
         line = line.strip()
 
         if line.startswith("%"):
-            cut = i
             break
 
         key, value = line.split(" ")
