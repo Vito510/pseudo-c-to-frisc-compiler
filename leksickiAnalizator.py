@@ -25,15 +25,15 @@ class LexicalAnalyzer:
         input_length = len(input)
 
         while current_position < input_length:
-            dio = input[current_position:]
+            part = input[current_position:]
 
             # Ignore whitespace and newlines
-            m = re.match(r'[ \t\r]+', dio)
+            m = re.match(r'[ \t\r]+', part)
             if m:
                 current_position += len(m.group(0))
                 continue
             
-            m = re.match(r'\n', dio)
+            m = re.match(r'\n', part)
             if m:
                 self.line_number += 1
                 current_position += len(m.group(0))
@@ -44,8 +44,8 @@ class LexicalAnalyzer:
 
             # Accepts the longest match
             for regex, action in self.transitions[self.current_state].items():
-                if re.match(regex, dio):
-                    text = re.match(regex, dio).group(0)
+                if re.match(regex, part):
+                    text = re.match(regex, part).group(0)
                     if longest_match is None or len(text) > len(longest_match):
                         longest_match = text
                         longest_actions = action
