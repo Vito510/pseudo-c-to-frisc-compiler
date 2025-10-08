@@ -15,14 +15,16 @@ buffer = []
 carape = [0]*60
 
 
-c_file = "0x1234"
+c_file = "0x1234 "
 for s in c_file:
     # print(s)
     buffer.append(s)
     for i, ulaz in enumerate(prijelazi[stanje]):
         
-        poen = 1 if re.fullmatch(ulaz, "".join(buffer)) is not None else 0
-        carape[i] += poen
+        if re.fullmatch(ulaz, "".join(buffer)) is not None:
+            carape[i] += 1
+        else:
+            carape[i] = 0
 
 
     print("".join(map(str,carape)))
