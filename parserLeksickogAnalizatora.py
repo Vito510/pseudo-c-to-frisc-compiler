@@ -22,6 +22,7 @@ def convert_2_pattern(pattern: str, reg_definicije: dict = {}) -> str:
     escape = ["^", "[", "+", "-", "$", "]","?","."]
     for item in escape:
         pattern = pattern.replace(item,"\\"+item)
+    pattern = pattern.replace("\_"," ")
     
     return pattern
 

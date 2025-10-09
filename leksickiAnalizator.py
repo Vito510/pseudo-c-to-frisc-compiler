@@ -13,6 +13,8 @@ class LexicalAnalyzer:
 
         self.line_number = 1
 
+        # print("States:", self.transitions["S_string"])
+
 
     def get_symbol_index(self, token_type, token_text):
         for i, (_, t, text) in enumerate(self.symbol_table):
@@ -26,18 +28,6 @@ class LexicalAnalyzer:
 
         while current_position < input_length:
             part = input[current_position:]
-
-            # Ignore whitespace and newlines
-            m = re.match(r'[ \t\r]+', part)
-            if m:
-                current_position += len(m.group(0))
-                continue
-            
-            m = re.match(r'\n', part)
-            if m:
-                self.line_number += 1
-                current_position += len(m.group(0))
-                continue
 
             longest_match = None
             longest_actions = None
@@ -106,6 +96,6 @@ data = parserLeksickogAnalizatora.parse("./data/c-leksik-pravila.txt")
 lexer = LexicalAnalyzer(data)
 
 c_file = open("./data/c-program.c", "r", encoding="utf-8").read()
-c_file = "void fun(int xYz)\nint x=5;\nx=20;"
+# c_file = "//adadadd \n 30"
 lexer.tokenize(c_file)
 lexer.print_tables()
