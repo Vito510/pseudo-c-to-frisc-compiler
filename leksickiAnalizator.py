@@ -34,8 +34,10 @@ class LexicalAnalyzer:
 
             # Accepts the longest match
             for regex, action in self.transitions[self.current_state].items():
-                if re.match(regex, part):
-                    text = re.match(regex, part).group(0)
+                r = re.match(regex, part)
+                if r:
+                    # print(f'Matched regex: {regex} with text: {r.group(0)} and state: {self.current_state}')
+                    text = r.group(0)
                     if longest_match is None or len(text) > len(longest_match):
                         longest_match = text
                         longest_actions = action
@@ -43,10 +45,15 @@ class LexicalAnalyzer:
             if not longest_match:
                 print("ERROR at line", self.line_number)
                 print("\n")
-                break
+                current_position += 1
+                continue
+                # break
+                
 
             offset = len(longest_match)
             return_to = 0
+
+            # print(f'Found "{longest_match}" in state "{self.current_state}" with actions {longest_actions}')
 
             # Execute actions
             for action in longest_actions:
@@ -67,7 +74,7 @@ class LexicalAnalyzer:
                         idx = len(self.symbol_table)
                         self.symbol_table.append((idx, token_type, longest_match))
                     self.uniform_sequence.append((token_type, self.line_number, idx))
-
+            
             current_position = current_position + offset - return_to
 
     def print_tables(self):
@@ -96,6 +103,10 @@ data = parserLeksickogAnalizatora.parse("./data/c-leksik-pravila.txt")
 lexer = LexicalAnalyzer(data)
 
 c_file = open("./data/c-program.c", "r", encoding="utf-8").read()
-# c_file = "//adadadd \n 30"
+# c_file = """ \"tes\"t2\" """
+
 lexer.tokenize(c_file)
 lexer.print_tables()
+
+# r = re.match("""(\n|\(|\)|\{|\}|\||\*|\\|\\$|\t| |!|#|%|&|'|\+|,|\-|\.|/|0|1|2|3|4|5|6|7|8|9|:|;|<|=|>|\?|@|A|B|C|D|E|F|G|H|I|J|K|L|M|N|O|P|Q|R|S|T|U|V|W|X|Y|Z|\[|\]|\^|_|`|a|b|c|d|e|f|g|h|i|j|k|l|m|n|o|p|q|r|s|t|u|v|w|x|y|z|~|\")*""", c_file)
+# print(r)
