@@ -15,7 +15,7 @@ def _convert_2_pattern(pattern: str, reg_definicije: dict = {}) -> str:
     for key in reg_definicije:
         key2 = "{" + key + "}"
     
-        if key2+"|" or "|"+key2 in pattern: # ne moramo enkapsulirati
+        if key2+"|" in pattern or "|"+key2 in pattern: # ne moramo enkapsulirati
             pattern = pattern.replace(key2,f'{reg_definicije[key]}')
         elif key2 in pattern:   # moramo
             pattern = pattern.replace(key2,f'({reg_definicije[key]})')
@@ -88,4 +88,4 @@ def parse(filepath: str) -> ParserData:
 
 if __name__ == "__main__":
     parse("./data/c-leksik-pravila.txt")
-    print(_convert_2_pattern("(_|{znak})(_|{znak}|{znamenka})*",_reg_definicije))
+    print(_convert_2_pattern("{znamenka}{znamenka}*",_reg_definicije))
