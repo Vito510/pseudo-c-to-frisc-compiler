@@ -1,5 +1,6 @@
-import re
+# import re
 import parserLeksickogAnalizatora
+from regex import match
 
 class LexicalAnalyzer:
     def __init__(self, data):
@@ -34,10 +35,9 @@ class LexicalAnalyzer:
 
             # Accepts the longest match
             for regex, action in self.transitions[self.current_state].items():
-                r = re.match(regex, part)
-                if r:
-                    # print(f'Matched regex: {regex} with text: {r.group(0)} and state: {self.current_state}')
-                    text = r.group(0)
+                re = match(regex, part, False)
+                if re:
+                    text = re
                     if longest_match is None or len(text) > len(longest_match):
                         longest_match = text
                         longest_actions = action

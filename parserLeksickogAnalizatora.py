@@ -8,26 +8,27 @@ class ParserData:
 # def ispis_reg_def() -> None:
 #     for k in reg_definicije:
 #         print(f'{k:40}\t{"".join(reg_definicije[k])}')
+_reg_definicije = {}
 
-def convert_2_pattern(pattern: str, reg_definicije: dict = {}) -> str:
+def _convert_2_pattern(pattern: str, reg_definicije: dict = {}) -> str:
     """converts the given regex pattern to python applicable format""" 
     for key in reg_definicije:
         key2 = "{" + key + "}"
     
-        if key2+"|" in pattern: # ne moramo enkapsulirati
+        if key2+"|" or "|"+key2 in pattern: # ne moramo enkapsulirati
             pattern = pattern.replace(key2,f'{reg_definicije[key]}')
         elif key2 in pattern:   # moramo
             pattern = pattern.replace(key2,f'({reg_definicije[key]})')
     
-    escape = ["^", "[", "+", "-", "$", "]","?","."]
-    for item in escape:
-        pattern = pattern.replace(item,"\\"+item)
-    pattern = pattern.replace("\_"," ")
+    # escape = ["^", "[", "+", "-", "$", "]","?","."]
+    # for item in escape:
+    #     pattern = pattern.replace(item,"\\"+item)
+    pattern = pattern.replace("\\_"," ")
     
     return pattern
 
 def parse(filepath: str) -> ParserData:
-    reg_definicije = {}
+    global _reg_definicije
     pravila_txt = open(filepath, "r", encoding="utf-8").readlines()
 
     for i, line in enumerate(pravila_txt):
@@ -40,15 +41,15 @@ def parse(filepath: str) -> ParserData:
         key, value = line.split(" ")
         key = key[1:-1]
 
-        for k in reg_definicije:
+        for k in _reg_definicije:
             key2 = "{" + k + "}"
         
             if key2+"|" in value: # ne moramo enkapsulirati
-                value = value.replace(key2,f'{reg_definicije[k]}')
+                value = value.replace(key2,f'{_reg_definicije[k]}')
             elif key2 in value:   # moramo
-                value = value.replace(key2,f'({reg_definicije[k]})')
+                value = value.replace(key2,f'({_reg_definicije[k]})')
         
-        reg_definicije[key] = value
+        _reg_definicije[key] = value
 
     pravila_txt = pravila_txt[i:]
 
@@ -72,7 +73,7 @@ def parse(filepath: str) -> ParserData:
         stanje,r = prijelaz.split(">",maxsplit=1)
         ulaz, akcija = map(str.strip,r.rsplit("{",maxsplit=1))
         akcija = list(filter(lambda x: x != "-", akcija.split("\n")))
-        ulaz = convert_2_pattern(ulaz, reg_definicije)
+        ulaz = _convert_2_pattern(ulaz, _reg_definicije)
         # print(stanje,ulaz,akcija)
 
         if stanje not in prijelazi:
@@ -85,3 +86,6 @@ def parse(filepath: str) -> ParserData:
 
     return ParserData(stanja, jedinke, prijelazi)
 
+if __name__ == "__main__":
+    parse("./data/c-leksik-pravila.txt")
+    print(_convert_2_pattern("(_|{znak})(_|{znak}|{znamenka})*",_reg_definicije))
