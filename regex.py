@@ -37,7 +37,7 @@ def match(pat: str, text_in: str, silent: bool = True):
     match_idx = 0
     capture = [0]*len(groups)
 
-    if not silent: print(f'{'-'*20}\nP: {pat}\tG: {groups}')
+    if not silent: print(f'{'-'*20}\nP: {pat}\tG: {groups}\tR: {groups_r}')
 
     while text and group_idx < len(groups):
         c = text.pop(0)
@@ -68,7 +68,7 @@ def match(pat: str, text_in: str, silent: bool = True):
     for i in range(len(capture)):
         capture[i] += groups_r[i]
 
-    if sum(capture) != len(groups):
+    if sum(capture) < len(groups):
         if not silent: print("Missing groups", capture)
         return None
 
@@ -77,11 +77,8 @@ def match(pat: str, text_in: str, silent: bool = True):
 
 if __name__ == "__main__":
     import re
-    pat = "\\n"
-    # pat = "(e|E)(\\$|\\+|-)(1|2|3|4|5|6|7|8|9)(0|1|2|3|4|5|6|7|8|9)*"
-
-    # pat = "(a|b)*"
-    x = "\n"
+    pat = "(a|b)*bc"
+    x = "aabbabbc"
 
     r1 = re.match(pat, x)
     r2 = match(pat,x,False)
