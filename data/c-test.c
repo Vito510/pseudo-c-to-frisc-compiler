@@ -13,3 +13,4 @@ void fun(int xYz) {
 // glavni program "testira osnovne kljucne rijeci i operatore za lekser"
 int main(void) {
     int A[512];
+    int t[] = {1,2,3};
