@@ -1,18 +1,23 @@
 # import re
 import parserLeksickogAnalizatora
 from regex import match
+import json
 
 class LexicalAnalyzer:
     def __init__(self, data):
         self.states = data.stanja
         self.tokens = data.jedinke
-        self.transitions = data.prijelazi
+        self.transitions: dict = data.prijelazi
 
         self.current_state = 'S_pocetno'
         self.symbol_table = []
         self.uniform_sequence = []
 
         self.line_number = 1
+
+        with open("./transitions.json", "w") as f:
+            json.dump(self.transitions, f)
+            
 
         # print("States:", self.transitions["S_string"])
 
@@ -24,58 +29,62 @@ class LexicalAnalyzer:
         return None
 
     def tokenize(self, input):
-        current_position = 0
+        # input = "/* test"
         input_length = len(input)
 
-        while current_position < input_length:
-            part = input[current_position:]
+        l = 0
 
-            longest_match = None
-            longest_actions = None
+        while l < input_length:
+            part = input[l:]
+            # print(part)
+
+            results = []
 
             # Accepts the longest match
-            for regex, action in self.transitions[self.current_state].items():
-                re = match(regex, part, False)
-                if re:
-                    text = re
-                    if longest_match is None or len(text) > len(longest_match):
-                        longest_match = text
-                        longest_actions = action
+            # print(input[l])
 
-            if not longest_match:
-                print("ERROR at line", self.line_number)
-                print("\n")
-                current_position += 1
-                continue
-                # break
+            for regex, action in self.transitions[self.current_state].items():
+                re = match(regex, part,1)
+                results.append(re if re else '')
+                
+                # if re: match(regex, part, 0)
+
+
+
+
+            longest = max(results, key=lambda x: len(x))
+            mx = len(longest)
+
+            
+            return_to = None
+            if sum([len(r) for r in results]) > 0:
+                idx = results.index(longest)
+                _, actions = list(self.transitions[self.current_state].items())[idx]
+                if actions: print(f'{longest.strip():10}\t{actions}')
                 
 
-            offset = len(longest_match)
-            return_to = 0
 
-            # print(f'Found "{longest_match}" in state "{self.current_state}" with actions {longest_actions}')
 
-            # Execute actions
-            for action in longest_actions:
-                parts = action.split()
+                # Execute actions
+                for action in actions:
+                    parts = action.split()
 
-                if parts[0] == "UDJI_U_STANJE":
-                    self.current_state = parts[1]
-                elif parts[0] == "VRATI_SE":
-                    return_to = int(parts[1])
-                elif parts[0] == "NOVI_REDAK":
-                    self.line_number += 1
+                    if parts[0] == "UDJI_U_STANJE":
+                        self.current_state = parts[1]
+                    elif parts[0] == "VRATI_SE":
+                        return_to = int(parts[1])
+                    elif parts[0] == "NOVI_REDAK":
+                        self.line_number += 1
 
-                # Handle token
-                else:
-                    token_type = parts[0]
-                    idx = self.get_symbol_index(token_type, longest_match)
-                    if idx is None:
-                        idx = len(self.symbol_table)
-                        self.symbol_table.append((idx, token_type, longest_match))
-                    self.uniform_sequence.append((token_type, self.line_number, idx))
             
-            current_position = current_position + offset - return_to
+            if return_to is not None:
+                l -= return_to
+            elif mx:
+                l += mx
+            else:
+                l += 1
+
+
 
     def print_tables(self):
         print("==================================")
@@ -105,7 +114,7 @@ if __name__ == "__main__":
     # c_file = """ \"tes\"t2\" """
 
     lexer.tokenize(c_file)
-    lexer.print_tables()
+    # lexer.print_tables()
 
     # r = re.match("""(\n|\(|\)|\{|\}|\||\*|\\|\\$|\t| |!|#|%|&|'|\+|,|\-|\.|/|0|1|2|3|4|5|6|7|8|9|:|;|<|=|>|\?|@|A|B|C|D|E|F|G|H|I|J|K|L|M|N|O|P|Q|R|S|T|U|V|W|X|Y|Z|\[|\]|\^|_|`|a|b|c|d|e|f|g|h|i|j|k|l|m|n|o|p|q|r|s|t|u|v|w|x|y|z|~|\")*""", c_file)
     # print(r)
