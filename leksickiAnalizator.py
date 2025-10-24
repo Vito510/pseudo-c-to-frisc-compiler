@@ -1,13 +1,13 @@
-import parserLeksickogAnalizatora
+from parserLeksickogAnalizatora import ParserData, parse
 from SimEnka import match
 
 class LexicalAnalyzer:
-    def __init__(self, data):
+    def __init__(self, data: ParserData):
         self.states = data.stanja
         self.tokens = data.jedinke
         self.transitions: dict = data.prijelazi
 
-        self.current_state = 'S_pocetno'
+        self.current_state = data.stanja[0]
         self.symbol_table = []
         self.uniform_sequence = []
 
@@ -108,14 +108,10 @@ class LexicalAnalyzer:
         print("velika kontribucija od strane najgas programera ikad <3")
 
 if __name__ == "__main__":
-    data = parserLeksickogAnalizatora.parse("./data/c-leksik-pravila.txt")
+    data = parse("./tests/lab1_teza/15_minusLang_laksi/test.lan")
     lexer = LexicalAnalyzer(data)
 
-    c_file = open("./data/c-program.c", "r", encoding="utf-8").read()
-    # c_file = """ \"tes\"t2\" """
+    c_file = open("./tests/lab1_teza/15_minusLang_laksi/test.in", "r", encoding="utf-8").read()
 
     lexer.tokenize(c_file)
-    # lexer.print_tables()
 
-    # r = re.match("""(\n|\(|\)|\{|\}|\||\*|\\|\\$|\t| |!|#|%|&|'|\+|,|\-|\.|/|0|1|2|3|4|5|6|7|8|9|:|;|<|=|>|\?|@|A|B|C|D|E|F|G|H|I|J|K|L|M|N|O|P|Q|R|S|T|U|V|W|X|Y|Z|\[|\]|\^|_|`|a|b|c|d|e|f|g|h|i|j|k|l|m|n|o|p|q|r|s|t|u|v|w|x|y|z|~|\")*""", c_file)
-    # print(r)

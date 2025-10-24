@@ -1,6 +1,7 @@
 import unittest
 from parserLeksickogAnalizatora import parse, _convert_2_pattern,_reg_definicije
-# from regex import match
+from leksickiAnalizator import LexicalAnalyzer
+import os
 from SimEnka import match
 
 class Test(unittest.TestCase):
@@ -50,7 +51,37 @@ class Test(unittest.TestCase):
         for t, c in zip(test, correct):
             result = match(t[1],t[0])
             self.assertEqual(result,c)
-        
+
+
+    def run_lexer_test(self, folder_path):
+        # path = os.path.join("tests", folder_path)
+        path = folder_path
+        data = parse(os.path.join(path, "test.lan"))
+        lexer = LexicalAnalyzer(data)
+
+        with open(os.path.join(path, "test.in"), "r", encoding="utf-8") as f:
+            input_data = f.read()
+
+        result = lexer.tokenize(input_data)
+
+        with open(os.path.join(path, "test.out"), "r", encoding="utf-8") as f:
+            expected_output = f.read().strip()
+
+        self.assertEqual(result.strip(), expected_output)
+
+# Dynamically create a test for each subfolder in tests/lab1_teza
+def generate_test(folder_name):
+    def test(self):
+        self.run_lexer_test(folder_name)
+    return test
+
+test_root = "tests/lab1_teza"
+for folder in os.listdir(test_root):
+    folder_path = os.path.join(test_root, folder)
+    if os.path.isdir(folder_path):
+        test_name = f"test_{folder}"
+        setattr(Test, test_name, generate_test(folder_path))
+
 
 if __name__ == "__main_":
     unittest.main()
