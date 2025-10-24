@@ -2,7 +2,7 @@ from NKaGenerator import regex_to_automat
 
 cache = {}
 
-def match(pattern: str, text: str) -> str|None:
+def match(pattern: str, text: str):
     a = regex_to_automat(pattern)
     text = [ord(i) for i in text]
 

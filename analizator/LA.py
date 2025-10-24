@@ -1,13 +1,14 @@
-from parserLeksickogAnalizatora import ParserData, parse
+import sys
+import json
 from SimEnka import match
 
 class LexicalAnalyzer:
-    def __init__(self, data: ParserData):
-        self.states = data.stanja
-        self.tokens = data.jedinke
-        self.transitions: dict = data.prijelazi
+    def __init__(self, data: dict):
+        self.states = data['stanja']
+        self.tokens = data['jedinke']
+        self.transitions: dict = data['prijelazi']
 
-        self.current_state = data.stanja[0]
+        self.current_state = data['stanja'][0]
         self.symbol_table = []
         self.uniform_sequence = []
 
@@ -81,16 +82,12 @@ class LexicalAnalyzer:
         return "\n".join(r)
 
 if __name__ == "__main__":
-    # data = parse("./data/lexing-rules/c-leksik-pravila.txt")
-    # lexer = LexicalAnalyzer(data)
 
-    # c_file = open("./data/code-input/c-test.c", "r", encoding="utf-8").read()
+    with open("tablice.json", "r") as f:
+        data = json.load(f)
 
-    # print(lexer.tokenize(c_file))
-
-    data = parse("./tests/lab1_teza/09_poredak/test.lan")
     lexer = LexicalAnalyzer(data)
 
-    c_file = open("./tests/lab1_teza/09_poredak/test.in", "r", encoding="utf-8").read()
+    c_file = sys.stdin.read()
 
     print(lexer.tokenize(c_file))

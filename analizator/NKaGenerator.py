@@ -20,7 +20,7 @@ class Automat():
     def __init__(self):
         self.start: Stanje
         self.indexed: bool = False
-        self.node_list: list[Stanje] = []
+        self.node_list: list = []
 
     def _automat_dfs(self, node: Stanje):
         if node in self.node_list:
@@ -37,13 +37,13 @@ class Automat():
             for n in next:
                 self._automat_dfs(n)
 
-    def traverse_automat(self) -> list[Stanje]:
+    def traverse_automat(self):
         self.node_list = []
 
         self._automat_dfs(self.start)
         return self.node_list
     
-    def get_accept_state(self) -> Stanje:
+    def get_accept_state(self):
         nodes = self.traverse_automat()
 
         for node in nodes:
@@ -60,7 +60,7 @@ class Automat():
         for i, node in enumerate(self.traverse_automat()):
             node.index = i
 
-    def concat(self, other: "Automat") -> "Automat":
+    def concat(self, other):
         # create new start node
         start = Stanje({"$":[self.start]})
         # create new end node
@@ -82,7 +82,7 @@ class Automat():
         return self
 
 
-    def union(self, other: "Automat") -> "Automat":
+    def union(self, other):
         # create new start node
         start = Stanje({"$":[self.start,other.start]})
         # create new end node
@@ -100,7 +100,7 @@ class Automat():
 
         return self
 
-    def kleen(self) -> "Automat":
+    def kleen(self):
         # create new start node
         start = Stanje({"$":[self.start]})
         # create new end node
@@ -169,7 +169,7 @@ class Compiled_Automat():
 
         return r
 
-def simple_Automat(symb: str) -> Automat:
+def simple_Automat(symb: str):
     a = Automat()
     end = Stanje({},True)
     s1 = Stanje({symb:[end]},False)

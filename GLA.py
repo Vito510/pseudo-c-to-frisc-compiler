@@ -1,3 +1,5 @@
+import sys
+import json
 
 class ParserData:
     def __init__(self, stanja, jedinke, prijelazi):
@@ -10,7 +12,7 @@ class ParserData:
 #         print(f'{k:40}\t{"".join(reg_definicije[k])}')
 _reg_definicije = {}
 
-def _convert_2_pattern(pattern: str, reg_definicije: dict = {}) -> str:
+def _convert_2_pattern(pattern: str, reg_definicije: dict = {}):
     """converts the given regex pattern to python applicable format""" 
     for key in reg_definicije:
         key2 = "{" + key + "}"
@@ -27,9 +29,10 @@ def _convert_2_pattern(pattern: str, reg_definicije: dict = {}) -> str:
     
     return pattern
 
-def parse(filepath: str) -> ParserData:
+def parse():
     global _reg_definicije
-    pravila_txt = open(filepath, "r", encoding="utf-8").readlines()
+    pravila_txt = [line + "\n" for line in sys.stdin.read().split("\n")[:-1]]
+    # print(len(pravila_txt))
 
     for i, line in enumerate(pravila_txt):
 
@@ -88,5 +91,13 @@ def parse(filepath: str) -> ParserData:
     return ParserData(stanja, jedinke, prijelazi)
 
 if __name__ == "__main__":
-    parse("./data/c-leksik-pravila.txt")
-    print(_convert_2_pattern("{znamenka}{znamenka}*",_reg_definicije))
+
+    data = parse()
+    out = {
+        "jedinke": data.jedinke,
+        "stanja": data.stanja,
+        "prijelazi": data.prijelazi
+    }
+
+    with open("./analizator/tablice.json", "w") as f:
+        json.dump(out, f)
