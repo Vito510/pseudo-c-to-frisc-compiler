@@ -14,17 +14,14 @@ class LexicalAnalyzer:
         self.line_number = 1
             
 
-        # print("States:", self.transitions["S_string"])
-
-
     def get_symbol_index(self, token_type, token_text):
         for i, (_, t, text) in enumerate(self.symbol_table):
             if t == token_type and text == token_text:
                 return i
         return None
 
-    def tokenize(self, input):
-        # input = "/* test"
+    def tokenize(self, input) -> str:
+        r = []
         input_length = len(input)
 
         l = 0
@@ -41,30 +38,15 @@ class LexicalAnalyzer:
             for regex, action in self.transitions[self.current_state].items():
                 re = match(regex, part)
                 results.append(re if re else '')
-                
-                # if re: match(regex, part, 0)
 
-
-
-
-            longest = max(results, key=lambda x: len(x))
-            mx = len(longest)
+            longest_match = max(results, key=lambda x: len(x))
 
             
             return_to = None
+            actions = None
             if sum([len(r) for r in results]) > 0:
-                idx = results.index(longest)
+                idx = results.index(longest_match)
                 _, actions = list(self.transitions[self.current_state].items())[idx]
-                # if actions: print(f'{longest.strip():10}\t{actions}')
-
-                if actions:
-                    akt = actions[0]
-                    if akt not in ["NOVI_REDAK"] and " " not in akt:
-                        print(akt)
-
-                
-
-
 
                 # Execute actions
                 for action in actions:
@@ -77,41 +59,38 @@ class LexicalAnalyzer:
                     elif parts[0] == "NOVI_REDAK":
                         self.line_number += 1
 
+
             
             if return_to is not None:
-                l -= return_to
-            elif mx:
-                l += mx
+                longest_match = longest_match[:return_to]
+                l += len(longest_match)
+            elif len(longest_match):
+                l += len(longest_match)
             else:
                 l += 1
 
+            # if actions: print(f'{actions} {self.line_number} {longest_match.strip()}')
+
+            if actions:
+                akt = actions[0]
+                if akt not in ["NOVI_REDAK"] and " " not in akt:
+                    r.append(f'{akt} {self.line_number} {longest_match}')
 
 
-    def print_tables(self):
-        print("==================================")
-        print("SYMBOL TABLE:")
-        print("==================================")
-        print("Index\t  Token\t\t      Text")
-        print("==================================")
-        for idx, token, text in self.symbol_table:
-            print(f"{idx:<5}\t{token:^10}\t{text:>10}")
-        print("==================================")
 
-        print("\n\n==========================================")
-        print("UNIFORM SEQUENCE:")
-        print("==========================================")
-        print("Token\t\t       Line\t     Index")
-        print("==========================================")
-        for token, line, idx in self.uniform_sequence:
-            print(f"{token:<10}\t{line:10}\t{idx:>10}", sep="\t\t")
-        print("==========================================")
-        print("velika kontribucija od strane najgas programera ikad <3")
+        return "\n".join(r)
 
 if __name__ == "__main__":
-    data = parse("./tests/lab1_teza/15_minusLang_laksi/test.lan")
+    # data = parse("./data/lexing-rules/c-leksik-pravila.txt")
+    # lexer = LexicalAnalyzer(data)
+
+    # c_file = open("./data/code-input/c-test.c", "r", encoding="utf-8").read()
+
+    # print(lexer.tokenize(c_file))
+
+    data = parse("./tests/lab1_teza/09_poredak/test.lan")
     lexer = LexicalAnalyzer(data)
 
-    c_file = open("./tests/lab1_teza/15_minusLang_laksi/test.in", "r", encoding="utf-8").read()
+    c_file = open("./tests/lab1_teza/09_poredak/test.in", "r", encoding="utf-8").read()
 
-    lexer.tokenize(c_file)
-
+    print(lexer.tokenize(c_file))

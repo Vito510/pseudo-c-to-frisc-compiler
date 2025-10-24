@@ -81,8 +81,9 @@ def parse(filepath: str) -> ParserData:
         
         if ulaz not in prijelazi[stanje]:
             prijelazi[stanje][ulaz] = []
-
-        prijelazi[stanje][ulaz] = akcija
+            prijelazi[stanje][ulaz] = akcija
+        else:
+            continue
 
     return ParserData(stanja, jedinke, prijelazi)
 

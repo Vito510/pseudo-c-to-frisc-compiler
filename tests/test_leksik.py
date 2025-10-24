@@ -2,7 +2,24 @@ import unittest
 from parserLeksickogAnalizatora import parse, _convert_2_pattern,_reg_definicije
 from leksickiAnalizator import LexicalAnalyzer
 import os
+import signal
 from SimEnka import match
+
+def timeout(seconds=5):
+    """Decorator to time out a test after `seconds` seconds."""
+    def decorator(func):
+        def _handle_timeout(signum, frame):
+            raise TimeoutError(f"Test timed out after {seconds} seconds")
+
+        def wrapper(*args, **kwargs):
+            signal.signal(signal.SIGALRM, _handle_timeout)
+            signal.alarm(seconds)
+            try:
+                return func(*args, **kwargs)
+            finally:
+                signal.alarm(0)  # disable alarm
+        return wrapper
+    return decorator
 
 class Test(unittest.TestCase):
     def test_list_int(self):
@@ -52,7 +69,7 @@ class Test(unittest.TestCase):
             result = match(t[1],t[0])
             self.assertEqual(result,c)
 
-
+    @timeout(3)
     def run_lexer_test(self, folder_path):
         # path = os.path.join("tests", folder_path)
         path = folder_path
@@ -67,7 +84,7 @@ class Test(unittest.TestCase):
         with open(os.path.join(path, "test.out"), "r", encoding="utf-8") as f:
             expected_output = f.read().strip()
 
-        self.assertEqual(result.strip(), expected_output)
+        self.assertEqual(result.strip(), expected_output.strip())
 
 # Dynamically create a test for each subfolder in tests/lab1_teza
 def generate_test(folder_name):
