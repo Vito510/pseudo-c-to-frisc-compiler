@@ -1,7 +1,5 @@
-# import re
 import parserLeksickogAnalizatora
-from regex import match
-import json
+from SimEnka import match
 
 class LexicalAnalyzer:
     def __init__(self, data):
@@ -14,9 +12,6 @@ class LexicalAnalyzer:
         self.uniform_sequence = []
 
         self.line_number = 1
-
-        with open("./transitions.json", "w") as f:
-            json.dump(self.transitions, f)
             
 
         # print("States:", self.transitions["S_string"])
@@ -44,7 +39,7 @@ class LexicalAnalyzer:
             # print(input[l])
 
             for regex, action in self.transitions[self.current_state].items():
-                re = match(regex, part,1)
+                re = match(regex, part)
                 results.append(re if re else '')
                 
                 # if re: match(regex, part, 0)
@@ -60,7 +55,13 @@ class LexicalAnalyzer:
             if sum([len(r) for r in results]) > 0:
                 idx = results.index(longest)
                 _, actions = list(self.transitions[self.current_state].items())[idx]
-                if actions: print(f'{longest.strip():10}\t{actions}')
+                # if actions: print(f'{longest.strip():10}\t{actions}')
+
+                if actions:
+                    akt = actions[0]
+                    if akt not in ["NOVI_REDAK"] and " " not in akt:
+                        print(akt)
+
                 
 
 

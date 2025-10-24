@@ -1,6 +1,7 @@
 import unittest
 from parserLeksickogAnalizatora import parse, _convert_2_pattern,_reg_definicije
-from regex import match
+# from regex import match
+from SimEnka import match
 
 class Test(unittest.TestCase):
     def test_list_int(self):
@@ -39,8 +40,8 @@ class Test(unittest.TestCase):
         """
         test = [("a","(a|b|c)"),
                 ("512];","(0|1|2|3|4|5|6|7|8|9)(0|1|2|3|4|5|6|7|8|9)*"),
-                ("e+1005abc","(e|E)(\\$|\\+|-)(1|2|3|4|5|6|7|8|9)(0|1|2|3|4|5|6|7|8|9)*"),
-                ("v+1002","(e|E)(\\$|\\+|-)(1|2|3|4|5|6|7|8|9)(0|1|2|3|4|5|6|7|8|9)*"),
+                ("e+1005abc","(e|E)($|+|-)(1|2|3|4|5|6|7|8|9)(0|1|2|3|4|5|6|7|8|9)*"),
+                ("v+1002","(e|E)($|+|-)(1|2|3|4|5|6|7|8|9)(0|1|2|3|4|5|6|7|8|9)*"),
                 ("aabbabbc","(a|b)*bc")]
         
         correct = ["a","512","e+1005",None,"aabbabbc"]
