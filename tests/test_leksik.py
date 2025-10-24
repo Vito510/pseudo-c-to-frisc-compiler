@@ -8,7 +8,7 @@ class Test(unittest.TestCase):
         """
         Parse test
         """
-        result = parse("./data/c-leksik-pravila.txt")
+        result = parse("data/lexing-rules/c-leksik-pravila.txt")
         self.assertIsNotNone(result)
         
     def test_regex_creator(self):
