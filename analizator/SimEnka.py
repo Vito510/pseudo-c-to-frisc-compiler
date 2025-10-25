@@ -1,30 +1,11 @@
-from NKaGenerator import regex_to_automat
-
-cache = {}
-
-def match(pattern: str, text: str):
-    a = regex_to_automat(pattern)
+def match(a: dict, text: str):
     text = [ord(i) for i in text]
 
-    stanja = a.stanja
-    simboli = a.simboli
-    accept = a.accept
-    start = a.start
-
-    if a in cache:
-        prelazi = cache[a]
-    else:
-        prelazi = a.prelazi
-        # izgradi epsilon
-        for state in prelazi:
-            if '$' in prelazi[state]:
-                for i in prelazi:
-                    for j in prelazi[i]:
-                        if state in prelazi[i][j]:
-                            prelazi[i][j].extend(prelazi[state]['$'])
-                            prelazi[i][j] = list(set(prelazi[i][j]))
-        cache[a] = prelazi
-
+    stanja = a['stanja']
+    simboli = a['simboli']
+    accept = a['accept']
+    start = a['start']
+    prelazi = a['prijelazi']
 
     longest_match = None
     next = [start]
