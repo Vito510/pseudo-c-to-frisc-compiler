@@ -36,8 +36,8 @@ class LexicalAnalyzer:
             # Accepts the longest match
             # print(input[l])
 
-            for regex, action in self.transitions[self.current_state].items():
-                re = match(regex, part)
+            for item in self.transitions[self.current_state]:
+                re = match(item, part)
                 results.append(re if re else '')
 
             longest_match = max(results, key=lambda x: len(x))
@@ -47,7 +47,7 @@ class LexicalAnalyzer:
             actions = None
             if sum([len(r) for r in results]) > 0:
                 idx = results.index(longest_match)
-                _, actions = list(self.transitions[self.current_state].items())[idx]
+                actions = list(self.transitions[self.current_state])[idx]["akcija"]
 
                 # Execute actions
                 for action in actions:
@@ -81,10 +81,20 @@ class LexicalAnalyzer:
 
         return "\n".join(r)
 
+def keystoint(x):
+    result = {}
+    for k, v in x.items():
+        # Try to convert keys that are numeric strings
+        if isinstance(k, str) and k.isdigit():
+            result[int(k)] = v
+        else:
+            result[k] = v
+    return result
+
 if __name__ == "__main__":
 
     with open("tablice.json", "r") as f:
-        data = json.load(f)
+        data = json.load(f, object_hook=keystoint)
 
     lexer = LexicalAnalyzer(data)
 

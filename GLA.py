@@ -1,5 +1,6 @@
 import sys
 import json
+from analizator.NKaGenerator import regex_to_automat
 
 class ParserData:
     def __init__(self, stanja, jedinke, prijelazi):
@@ -51,7 +52,8 @@ def parse():
                 value = value.replace(key2,f'{_reg_definicije[k]}')
             elif key2 in value:   # moramo
                 value = value.replace(key2,f'({_reg_definicije[k]})')
-        
+    
+
         _reg_definicije[key] = value
 
     pravila_txt = pravila_txt[i:]
@@ -77,16 +79,35 @@ def parse():
         ulaz, akcija = map(str.strip,r.rsplit("{",maxsplit=1))
         akcija = list(filter(lambda x: x != "-", akcija.split("\n")))
         ulaz = _convert_2_pattern(ulaz, _reg_definicije)
-        # print(stanje,ulaz,akcija)
+        
+
+        automat = regex_to_automat(ulaz)
+
+        prelazi = automat.prelazi
+        # izgradi epsilon
+        for state in prelazi:
+            if '$' in prelazi[state]:
+                for i in prelazi:
+                    for j in prelazi[i]:
+                        if state in prelazi[i][j]:
+                            prelazi[i][j].extend(prelazi[state]['$'])
+                            prelazi[i][j] = list(set(prelazi[i][j]))
+
+        ulaz = {
+            "prijelazi": prelazi,
+            "simboli": automat.simboli,
+            "stanja": automat.stanja,
+            "accept": automat.accept,
+            "start": automat.start,
+            "akcija": akcija
+        }
+
 
         if stanje not in prijelazi:
-            prijelazi[stanje] = {}
+            prijelazi[stanje] = []
         
-        if ulaz not in prijelazi[stanje]:
-            prijelazi[stanje][ulaz] = []
-            prijelazi[stanje][ulaz] = akcija
-        else:
-            continue
+        prijelazi[stanje].append(ulaz)
+
 
     return ParserData(stanja, jedinke, prijelazi)
 
