@@ -171,7 +171,7 @@ def parse_uniform_sequence(input_source=None):
         if len(parts) >= 1:
             symbol = parts[0]
             line_num = int(parts[1]) if len(parts) >= 2 else None
-            lexeme = parts[2] if len(parts) >= 3 else ""
+            lexeme = " ".join(parts[2:])
             data.append((symbol, line_num, lexeme))
     
     return data
