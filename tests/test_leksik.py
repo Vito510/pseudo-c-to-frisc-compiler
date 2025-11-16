@@ -21,7 +21,7 @@ def timeout(seconds=5):
         return wrapper
     return decorator
 
-class Test(unittest.TestCase):
+class LexingTests(unittest.TestCase):
     def test_list_int(self):
         """
         Parse test
@@ -97,7 +97,7 @@ for folder in os.listdir(test_root):
     folder_path = os.path.join(test_root, folder)
     if os.path.isdir(folder_path):
         test_name = f"test_{folder}"
-        setattr(Test, test_name, generate_test(folder_path))
+        setattr(LexingTests, test_name, generate_test(folder_path))
 
 
 if __name__ == "__main_":

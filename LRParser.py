@@ -12,7 +12,10 @@ class ParseTreeNode:
     def pretty_print(self, indent=0, file=None):
         prefix = " " * indent
         if self.is_terminal:
-            line = f"{prefix}{self.label} {self.line if self.line else ""} {self.lexeme if self.lexeme else ""}\n"
+            if self.line is not None:
+                line = f"{prefix}{self.label} {self.line} {self.lexeme}\n"
+            else:
+                line = f"{prefix}{self.label}\n"
         else:
             line = f"{prefix}{self.label}\n"
 
@@ -31,12 +34,11 @@ class ParseTreeNode:
 
 
 class LRParser:
-    def __init__(self, productions, action_table, goto_table, uniform_sequence, symbol_table, sync_symbols, start_state=0):
+    def __init__(self, productions, action_table, goto_table, uniform_sequence, sync_symbols, start_state=0):
         self.productions = productions
         self.action_table = action_table
         self.goto_table = goto_table
         self.uniform_sequence = list(uniform_sequence)
-        self.symbol_table = symbol_table
         self.sync_symbols = set(sync_symbols)
         self.start_state = start_state
 
@@ -44,31 +46,37 @@ class LRParser:
             self.uniform_sequence.append(("$", None, "$"))
 
     def report_error(self, state, symbol, line, lexeme):
-        expected = list(self.action_table.get(state, {}).keys())
+        expected = sorted(self.action_table.get(state, {}).keys())
         expected_str = ", ".join(expected) if expected else "(nema očekivanih znakova)"
-        print(f"Linija {line}: sintaksna pogreška; očekivano: {expected_str}; pronađeno: {symbol} {lexeme}")
+        line_str = str(line) if line is not None else "?"
+        print(f"Linija {line_str}: sintaksna pogreška; očekivano: {expected_str}; pronađeno: {symbol} {lexeme}")
 
     def recover_from_error(self, states, nodes, input_idx):
-        while input_idx < len(self.uniform_sequence):
-            sym, line, _ = self.uniform_sequence[input_idx]
-            if sym in self.sync_symbols or sym == "$":
-                break
-            input_idx += 1
+        n = len(self.uniform_sequence)
 
-        if input_idx >= len(self.uniform_sequence):
-            raise SyntaxError("Nema sinkronizacijskog znaka")
+        while input_idx < n:
+            sym, line, lexeme = self.uniform_sequence[input_idx]
 
-        sync_symbol = self.uniform_sequence[input_idx][0]
+            if sym == "$":
+                raise SyntaxError("Dosegnut kraj datoteke bez oporavka")
 
-        while states:
-            state = states[-1]
-            if sync_symbol in self.action_table.get(state, {}):
-                return input_idx, states, nodes
-            states.pop()
-            if nodes:
-                nodes.pop()
+            if sym in self.sync_symbols:
+                temp_states = list(states)
+                temp_nodes = list(nodes)
+                
+                while temp_states:
+                    state = temp_states[-1]
+                    if sym in self.action_table.get(state, {}):
+                        return input_idx, temp_states, temp_nodes
+                    temp_states.pop()
+                    if temp_nodes:
+                        temp_nodes.pop()
+                
+                input_idx += 1
+            else:
+                input_idx += 1
 
-        raise SyntaxError("R.I.P")
+        raise SyntaxError("Nema sinkronizacijskog znaka")
 
     def parse(self):
         states = [self.start_state]
@@ -76,37 +84,34 @@ class LRParser:
         input_idx = 0
 
         while True:
+            if input_idx >= len(self.uniform_sequence):
+                return None
+
             symbol, line, lexeme = self.uniform_sequence[input_idx]
             state = states[-1]
             action = self.action_table.get(state, {}).get(symbol)
-            # print(f"Stanje: {states[-1]}, simbol: {symbol}, akcija: {action} --- stog: {states}")
 
-            # Error
             if action is None:
                 self.report_error(state, symbol, line, lexeme)
                 try:
                     input_idx, states, nodes = self.recover_from_error(states, nodes, input_idx)
+                    continue
                 except SyntaxError as e:
                     print(f"Prekid parsiranja: {e}")
                     return None
-                continue
 
-            # Accept
             if action == "acc":
                 return nodes[0] if nodes else None
 
-            # Shift
             if action.startswith("S"):
                 new_state = int(action[1:])
                 leaf = ParseTreeNode(symbol, is_terminal=True, line=line, lexeme=lexeme)
                 
                 nodes.append(leaf)
                 states.append(new_state)
-
                 input_idx += 1
                 continue
 
-            # Reduce
             if action.startswith("R"):
                 prod_idx = int(action[1:])
                 lhs, rhs = self.productions[prod_idx]
@@ -118,8 +123,11 @@ class LRParser:
                     children.append(eps_leaf)
                 else:
                     for _ in range(rhs_len):
+                        if not states or len(states) <= 1:
+                            return None
                         states.pop()
-                        children.append(nodes.pop())
+                        if nodes:
+                            children.append(nodes.pop())
                     children.reverse()
 
                 new_node = ParseTreeNode(lhs, is_terminal=False)
@@ -131,39 +139,50 @@ class LRParser:
                     self.report_error(states[-1], lhs, line, lexeme)
                     try:
                         input_idx, states, nodes = self.recover_from_error(states, nodes, input_idx)
+                        continue
                     except SyntaxError as e:
                         print(f"Prekid parsiranja: {e}")
                         return None
-                    continue
 
                 nodes.append(new_node)
                 states.append(goto_state)
                 continue
 
+            return None
+
+
+def parse_uniform_sequence(path):
+    data = []
+    with open(path, "r", encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            parts = line.split()
+            if len(parts) >= 1:
+                symbol = parts[0]
+                line_num = int(parts[1]) if len(parts) >= 2 else None
+                lexeme = parts[2] if len(parts) >= 3 else ""
+                data.append((symbol, line_num, lexeme))
+    return data
+
+
 if __name__ == "__main__":
     from LRParserGenerator import LRParserGenerator
 
-    uniform_sequence = [
-        ('a', 1, "x x x"),
-        ('b', 2, "y y"),
-        ('a', 3, "xx xx"),
-        ('a', 4, "xx xx xx"),
-        ('b', 4, "y"),
-    ]
-
-    lrgen = LRParserGenerator("./data/syntax-rules/kanon-sintaksa-pravila.txt")
+    lrgen = LRParserGenerator("./tests/lab2_teza/07oporavak2/test.san")
     lrgen.build_tables()
 
     lr = LRParser(
         productions=lrgen.productions,
         action_table=lrgen.action_table,
         goto_table=lrgen.goto_table,
-        uniform_sequence=uniform_sequence,
-        sync_symbols=lrgen.syn,
-        symbol_table=[],
+        uniform_sequence=parse_uniform_sequence("./tests/lab2_teza/07oporavak2/test.in"),
+        sync_symbols=lrgen.syn
     )
 
     root = lr.parse()
+    
     if root:
         root.write_to_file("output/lrparser-tree.txt")
     else:

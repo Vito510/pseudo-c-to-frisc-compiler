@@ -74,6 +74,7 @@ class LexicalAnalyzer:
             if actions:
                 akt = actions[0]
                 if akt not in ["NOVI_REDAK"] and " " not in akt:
+                    self.uniform_sequence.append((akt, int(self.line_number), longest_match))
                     r.append(f'{akt} {self.line_number} {longest_match}')
 
 
@@ -90,7 +91,6 @@ if __name__ == "__main__":
 
     data = parse("./tests/lab1_teza/09_poredak/test.lan")
     lexer = LexicalAnalyzer(data)
-
     c_file = open("./tests/lab1_teza/09_poredak/test.in", "r", encoding="utf-8").read()
 
     print(lexer.tokenize(c_file))

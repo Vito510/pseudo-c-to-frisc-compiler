@@ -12,10 +12,11 @@ class LRParserGenerator:
         self.productions = []
         self.__parse_grammar(inputPath)
 
-        self.__first_table = self.__compute_first_table()
-
         self.action_table = defaultdict(dict)
         self.goto_table = defaultdict(dict)
+
+        self._first_cache = {}
+        self._computing = set()
        
     def __parse_grammar(self, inputPath):
         lines = open(inputPath, "r", encoding="utf-8").readlines()
@@ -29,7 +30,7 @@ class LRParserGenerator:
             elif line.startswith("%T"):
                 self.terminals = line.split()[1:]
             elif line.startswith("%Syn"):
-                self.syn = line.split()[1]
+                self.syn = line.split()[1:]
             elif re.match(r"^<[^>]+>$", line):
                 current_nonterminal = line
                 if current_nonterminal not in self.__rules:
@@ -42,135 +43,152 @@ class LRParserGenerator:
         
         for l, r_list in self.__rules.items():
             for r in r_list:
-                self.productions.append((l, r))
+                self.productions.append((l, tuple(r)))
 
-    def __compute_first_table(self):
-        first = defaultdict(set)
-
-        for terminal in self.terminals:
-            first[terminal].add(terminal)
-
-        for non_terminal, productions in self.__rules.items():
-            for production in productions:
-                if not production:
-                    first[non_terminal].add("$")
-
-        changed = True
-        while changed:
-            changed = False
-            for nonTerminal, productions in self.__rules.items():
-                before = len(first[nonTerminal])
-
-                for production in productions:
-                    if not production:
-                        continue
-
-                    for symbol in production:
-                        first[nonTerminal].update(first[symbol] - {"$"})
-                        if "$" not in first[symbol]:
-                            break
-                    else:
-                        first[nonTerminal].add("$")
-
-                if len(first[nonTerminal]) > before:
-                    changed = True
-
-        return first
+    def __compute_first(self, symbols):  
+        result = set()
+        
+        for symbol in symbols:
+            if symbol in self.terminals or symbol == "$":
+                result.add(symbol)
+                return result
+            
+            if symbol in self.non_terminals:
+                symbol_first = self.__first_of_nonterminal(symbol)
+                result.update(symbol_first - {"$"})
+                
+                if "$" not in symbol_first:
+                    return result
+        
+        result.add("$")
+        return result
     
+    def __first_of_nonterminal(self, nonterminal):        
+        if nonterminal in self._first_cache:
+            return self._first_cache[nonterminal]
+        if nonterminal in self._computing:
+            return set()
+        
+        self._computing.add(nonterminal)
+        first_set = set()
+        
+        if nonterminal not in self.__rules:
+            self._computing.remove(nonterminal)
+            return set()
+        for production in self.__rules[nonterminal]:
+            if not production:
+                first_set.add("$")
+            else:
+                prod_first = self.__compute_first(production)
+                first_set.update(prod_first)
+        
+        self._computing.remove(nonterminal)
+        self._first_cache[nonterminal] = first_set
+        return first_set
 
-    def __compute_clousure(self, items):
-        closure_set = set(items)
-        changed = True
+    def __compute_closure(self, items):
+        closure_list = list(items)
+        seen = set(items)
+        
+        idx = 0
+        while idx < len(closure_list):
+            nt, left, right, lookahead = closure_list[idx]
+            
+            if right and right[0] in self.non_terminals:
+                a = right[0]
 
-        while changed:
-            changed = False
-            new_items = set()
-            for (nonTerminal, left, right, lookahead) in closure_set: # npr. [A -> a•Bb, a] lijevo i desno od točke
-                if right and right[0] in self.non_terminals:  # prvi iza točke je neterminal
-                    B = right[0]
-                    rest = list(right[1:]) + [lookahead]
-
-                    first_rest = set()
-                    flag = False
-                    for symbol in rest:
-                        if self.__first_table[symbol]:
-                            flag = True
-                            first_rest.update(self.__first_table[symbol])
-                            continue
-                    if not flag:
-                        first_rest.update(set("$"))
-
-                    for prod in self.__rules[B]:
-                        for b in first_rest:
-                            new_item = (B, tuple(), tuple(prod), b)
-                            if new_item not in closure_set:
-                                new_items.add(new_item)
-            if new_items:
-                closure_set.update(new_items)
-                changed = True
-
-        return closure_set
-
+                beta_a = list(right[1:]) + [lookahead]
+                first_beta_a = self.__compute_first(beta_a)
+                
+                if a in self.__rules:
+                    for production in self.__rules[a]:
+                        for b in sorted(first_beta_a):
+                            new_item = (a, tuple(), tuple(production), b)
+                            if new_item not in seen:
+                                closure_list.append(new_item)
+                                seen.add(new_item)
+            idx += 1
+        
+        return frozenset(closure_list)
 
     def __goto(self, items, symbol):
-        moved = set()
-        for (nonTerminal, left, right, lookahead) in items:
+        moved = []
+        for item in sorted(items):
+            nt, left, right, lookahead = item
             if right and right[0] == symbol:
-                moved.add((nonTerminal, tuple(left) + (symbol,), tuple(right[1:]), lookahead))
-        return self.__compute_clousure(moved)
+                new_left = left + (symbol,)
+                new_right = right[1:]
+                moved.append((nt, new_left, new_right, lookahead))
+        
+        if not moved:
+            return frozenset()
+        
+        return self.__compute_closure(moved)
 
-
-    def __compute_states_transitions(self):
-        start = self.non_terminals[0]
+    def __compute_canonical_collection(self):
+        start_symbol = self.non_terminals[0]
         augmented_start = "<%>"
-        self.__rules[augmented_start] = [[start]]
+        self.__rules[augmented_start] = [[start_symbol]]
         self.non_terminals.insert(0, augmented_start)
-
-        I0 = self.__compute_clousure({(augmented_start, tuple(), (start,), "$")})
-
-        states = [I0]
+        
+        initial_item = (augmented_start, tuple(), (start_symbol,), "$")
+        initial_state = self.__compute_closure([initial_item])
+        
+        states = [initial_state]
         transitions = {}
-
-        state_queue = deque([I0])
-
-        while state_queue:
-            state = state_queue.popleft()
-            # print(f"Computing transitions for state {states.index(state)}")
-            # self.__print_state(state, states)
+        queue = deque([initial_state])
+        
+        while queue:
+            current_state = queue.popleft()
+            current_idx = states.index(current_state)
+            
             for symbol in self.non_terminals + self.terminals:
-                computed_state = self.__goto(state, symbol)
-                if not computed_state:
+                next_state = self.__goto(current_state, symbol)
+                
+                if not next_state:
                     continue
-                if computed_state not in states:
-                    states.append(computed_state)
-                    state_queue.append(computed_state)
-                transitions[(states.index(state), symbol)] = states.index(computed_state)
+                
+                if next_state not in states:
+                    states.append(next_state)
+                    queue.append(next_state)
+                
+                next_idx = states.index(next_state)
+                transitions[(current_idx, symbol)] = next_idx
+        
         return states, transitions
 
-
     def build_tables(self):
-        states, transitions = self.__compute_states_transitions()
-
-        for i, state in enumerate(states):
-            for (nonTerminal, left, right, lookahead) in state:
+        states, transitions = self.__compute_canonical_collection()
+        
+        for state_idx, state in enumerate(states):
+            for item in sorted(state):
+                nt, left, right, lookahead = item
+                
                 if right:
                     symbol = right[0]
+                    
                     if symbol in self.terminals:
-                        current_transition = transitions.get((i, symbol))
-                        if current_transition is not None:
-                            self.action_table[i][symbol] = f"S{current_transition}"
-                            
+                        # Shift
+                        if (state_idx, symbol) in transitions:
+                            next_state = transitions[(state_idx, symbol)]
+                            self.action_table[state_idx][symbol] = f"S{next_state}"
+                    
                     elif symbol in self.non_terminals:
-                        current_transition = transitions.get((i, symbol))
-                        if current_transition is not None:
-                            self.goto_table[i][symbol] = current_transition
+                        # Goto
+                        if (state_idx, symbol) in transitions:
+                            next_state = transitions[(state_idx, symbol)]
+                            self.goto_table[state_idx][symbol] = next_state
+                
                 else:
-                    if nonTerminal == "<%>":
-                        self.action_table[i]["$"] = "acc"
+                    if nt == "<%>":
+                        # Accept
+                        self.action_table[state_idx]["$"] = "acc"
                     else:
-                        prod_index = self.productions.index((nonTerminal, list(left)))
-                        # prod = f"{nonTerminal} | {' '.join(left) if left else '$'}"
-                        self.action_table[i][lookahead] = f"R{prod_index}"
+                        # Reduce
+                        production = (nt, left)
+                        if production in self.productions:
+                            prod_idx = self.productions.index(production)
+                            self.action_table[state_idx][lookahead] = f"R{prod_idx}"
 
     def save_tables(self, action_path, goto_path):
         with open(action_path, 'wb') as f:
@@ -185,27 +203,12 @@ class LRParserGenerator:
             self.goto_table = pickle.load(f)
 
 
-    def print_tables(self):
-        print("ACTION TABLE:")
-        for state, actions in self.action_table.items():
-            print(f"State {state}: {actions}")
-        print("\nGOTO TABLE:")
-        for state, gotos in self.goto_table.items():
-            print(f"State {state}: {gotos}")
-
-    def print_productions(self):
-        print("PRODUCTIONS:")
-        for idx, (lhs, rhs) in enumerate(self.productions):
-            rhs_str = ' '.join(rhs) if rhs else '$'
-            print(f"{idx}: {lhs} -> {rhs_str}")
-
 if __name__ == "__main__":
-    # lr = LRParserGenerator("./data/syntax-rules/c-sintaksa-pravila.txt")
-    lr = LRParserGenerator("./data/syntax-rules/kanon-sintaksa-pravila.txt")
+    lr = LRParserGenerator("./data/syntax-rules/c-sintaksa-pravila.txt")
+    # lr = LRParserGenerator("./data/syntax-rules/kanon-sintaksa-pravila.txt")
     # lr = LRParserGenerator("./data/syntax-rules/minuslang-sintaksa-pravila.txt")
 
     lr.build_tables()
-
     lr.print_productions()
     lr.print_tables()
-    # lr.save_tables("./data/tables/action_table.pkl", "./data/tables/goto_table.pkl")
+    lr.save_tables("./data/tables/action_table.pkl", "./data/tables/goto_table.pkl")
